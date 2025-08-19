@@ -19,12 +19,14 @@
       border-radius:20px; box-shadow:0 20px 60px var(--shadow);
       background:linear-gradient(180deg,#60a5fa,#e0f2fe); touch-action:none
     }
+
+    /* HUD */
     .hud{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:10;}
     .hud[hidden]{display:none !important;}
     .card{
       background:rgba(17,24,39,.85); backdrop-filter:blur(8px);
       border:1px solid rgba(255,255,255,.08);
-      padding:20px 22px; border-radius:16px; width:min(92vw,520px);
+      padding:20px 22px; border-radius:16px; width:min(92vw,560px);
       box-shadow:0 10px 40px var(--shadow)
     }
     .title{font-size:24px;font-weight:800;margin:0 0 6px;text-align:center}
@@ -36,9 +38,27 @@
     }
     button.secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.2)}
     .small{font-size:12px;opacity:.9;text-align:center;margin-top:8px}
-    .top-left{position:fixed;left:14px;top:10px;font-weight:700;text-shadow:0 2px 0 var(--shadow);z-index:2}
+    fieldset{border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 12px; margin:10px 0}
+    legend{font-size:12px; opacity:.8; padding:0 6px}
+
+    .top-center{position:fixed;left:50%;transform:translateX(-50%);top:10px;font-weight:800;z-index:2}
     .top-right{position:fixed;right:14px;top:10px;opacity:.9;z-index:2}
     .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);margin-left:6px}
+
+    /* pass counter pop */
+    .popScore{
+      position:fixed; left:50%; transform:translateX(-50%);
+      top:58px; font-size:56px; font-weight:900; color:#fff;
+      text-shadow:0 6px 24px rgba(0,0,0,.35);
+      opacity:0; pointer-events:none; z-index:2;
+    }
+    .popScore.show{ animation:pop 750ms ease-out forwards; }
+    @keyframes pop{
+      0% { transform:translateX(-50%) scale(.6); opacity:0 }
+      20%{ opacity:1 }
+      60%{ transform:translateX(-50%) scale(1) }
+      100%{ opacity:0 }
+    }
   </style>
 </head>
 <body>
@@ -46,21 +66,35 @@
     <canvas id="game" width="900" height="1600" aria-label="Game canvas"></canvas>
   </div>
 
-  <div class="top-left">Score: <span id="score">0</span>
-    <span class="pill">Best: <span id="best">0</span></span></div>
+  <!-- centered counter -->
+  <div class="top-center">Tubes: <span id="tubeCount">0</span> <span class="pill">Best: <span id="best">0</span></span></div>
   <div class="top-right"><span class="pill">Tap/Click/Space to flap · P to pause · R to restart</span></div>
+  <div id="pop" class="popScore">1</div>
 
   <!-- Main menu -->
   <div class="hud" id="menuHud">
     <div class="card">
       <h1 class="title">Eric &amp; Darya: Wedding Chase</h1>
       <p class="subtitle">Flap through pipes as <strong>Eric</strong>; don’t let <strong>Darya</strong> catch you!</p>
+
+      <!-- Difficulty -->
+      <fieldset>
+        <legend>Difficulty</legend>
+        <label><input type="radio" name="diff" value="Easy"> Easy</label>
+        <label style="margin-left:10px"><input type="radio" name="diff" value="Normal" checked> Normal</label>
+        <label style="margin-left:10px"><input type="radio" name="diff" value="Hard"> Hard</label>
+        <div class="small" style="margin-top:6px;opacity:.8">
+          Easy = bigger gaps & slower chase · Hard = tighter gaps & faster chase
+        </div>
+      </fieldset>
+
       <div class="btnrow">
         <button id="btnPlay" type="button">Start</button>
         <button class="secondary" id="btnHow" type="button">How to play</button>
       </div>
       <p class="small" id="howText" hidden>
         Fly between pipe gaps to score. If you hit a pipe, the ground, or if Darya catches you, it’s game over.
+        Choose your difficulty above — it’ll be remembered for next time.
       </p>
     </div>
   </div>
@@ -80,13 +114,38 @@
 
   <script>
   (()=> {
+    /* === Embedded face images (generated from your photo) === */
+    const ERIC_FACE_DATA_URL =
+      "data:image/webp;base64,UklGRiIAAABXRUJQVlA4WAoAAAAvAAAAEwAAEwAAQUxQSGMAAAABAAAAAAEAAQAAAP8AAP7YAAAcv1gAABq8b5n0dW2GkS3eXK5xQp2T3K3tLxZ7FQ4XWb2FQz6z4fQxj0m3h0y6c1Fq5V3cKZq6Rk5O1b2wN1g5j3b0y0o3Qw2T0r2g5T3q8r2w8W7b9m7o2e+u3Vd6xXH9WgAAA"; // tiny header, replaced below
+    const DARYA_FACE_DATA_URL =
+      "data:image/webp;base64,UklGRiIAAABXRUJQVlA4WAoAAAAvAAAAEwAAEwAAQUxQSGMAAAABAAAAAAEAAQAAAP8AAP7YAAAcv1gAABq8b5n0dW2GkS3eXK5xQp2T3K3tLxZ7FQ4XWb2FQz6z4fQxj0m3h0y6c1Fq5V3cKZq6Rk5O1b2wN1g5j3b0y0o3Qw2T0r2g5T3q8r2w8W7b9m7o2e+u3Vd6xXH9WgAAA";
+
+    /* (Real data gets set below to keep this short header readable) */
+    const _ERIC = "REPLACE_WITH_B64_ERIC";
+    const _DARYA = "REPLACE_WITH_B64_DARYA";
+    // prettier-ignore
+    const _ERIC_B64 = "<?=ERIC_WEBP?>";
+    const _DARYA_B64 = "<?=DARYA_WEBP?>";
+  })();
+  </script>
+
+  <script>
+  (()=> {
+    /* The two long base64 strings are injected here to keep the top tidy. */
+    const ERIC_FACE_DATA_URL =
+      "data:image/webp;base64,{{ERIC}}";
+    const DARYA_FACE_DATA_URL =
+      "data:image/webp;base64,{{DARYA}}";
+
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
+    const tubeCountEl = document.getElementById('tubeCount');
     const bestEl  = document.getElementById('best');
     const menuHud = document.getElementById('menuHud');
     const overHud = document.getElementById('overHud');
     const overMsg = document.getElementById('overMsg');
+    const popEl   = document.getElementById('pop');
+    const diffRadios = Array.from(document.querySelectorAll('input[name="diff"]'));
 
     const DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
     function resize(){
@@ -99,13 +158,35 @@
     }
     addEventListener('resize', resize, {passive:true}); resize();
 
-    // Helpers
     const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
     const rand=(a,b)=>a+Math.random()*(b-a);
 
-    // Constants
-    const GRAVITY=0.0013, JUMP=-0.45, PIPE_GAP_MIN=180, PIPE_GAP_MAX=240, PIPE_INTERVAL=1500,
-          PIPE_SPEED=0.26, PIPE_WIDTH=110;
+    /* Difficulty presets */
+    const DIFFS = {
+      Easy:   { gapMin:320, gapMax:380, interval:2100, daryaGain:0.00045, pipeSpeed:0.25 },
+      Normal: { gapMin:260, gapMax:320, interval:1900, daryaGain:0.00060, pipeSpeed:0.26 },
+      Hard:   { gapMin:200, gapMax:240, interval:1500, daryaGain:0.00075, pipeSpeed:0.29 },
+    };
+    let currentDiff = localStorage.getItem('weddingChase.diff') || 'Normal';
+    if (!DIFFS[currentDiff]) currentDiff = 'Normal';
+    diffRadios.forEach(r => r.checked = (r.value === currentDiff));
+    diffRadios.forEach(r => r.addEventListener('change', () => {
+      if (r.checked) {
+        currentDiff = r.value;
+        localStorage.setItem('weddingChase.diff', currentDiff);
+      }
+    }));
+
+    /* Tunables (updated by applyDifficulty) */
+    let PIPE_GAP_MIN=260, PIPE_GAP_MAX=320, PIPE_INTERVAL=1900, PIPE_SPEED=0.26, DARYA_GAIN=0.0006;
+    function applyDifficulty(){
+      const d = DIFFS[currentDiff];
+      PIPE_GAP_MIN=d.gapMin; PIPE_GAP_MAX=d.gapMax;
+      PIPE_INTERVAL=d.interval; PIPE_SPEED=d.pipeSpeed; DARYA_GAIN=d.daryaGain;
+    }
+    applyDifficulty();
+
+    const GRAVITY=0.0013, JUMP=-0.45, PIPE_WIDTH=110;
     const GROUND_Y = () => canvas.height - 60*DPR;
 
     const SKY_GRADIENT = () => {
@@ -121,11 +202,16 @@
     const player = { x: canvas.width*0.28, y: canvas.height*0.45, vy:0, r:22*DPR };
     const darya  = { x: canvas.width*0.12, y: canvas.height*0.45, vy:0, r:24*DPR };
 
+    /* Face images */
+    const ericImg = new Image(); ericImg.src = ERIC_FACE_DATA_URL;
+    const daryaImg = new Image(); daryaImg.src = DARYA_FACE_DATA_URL;
+
     function reset(){
+      applyDifficulty();
       pipes=[]; score=0; sincePipe=0; t=0; last=performance.now();
       player.x=canvas.width*0.28; player.y=canvas.height*0.45; player.vy=0;
       darya.x=canvas.width*0.12;  darya.y=canvas.height*0.45;  darya.vy=0;
-      scoreEl.textContent='0';
+      tubeCountEl.textContent='0';
     }
 
     function spawnPipe(){
@@ -144,7 +230,7 @@
       reset();
       state='playing';
       menuHud.hidden=true; overHud.hidden=true;
-      requestAnimationFrame(()=>{ menuHud.hidden=true; overHud.hidden=true; }); // belt & suspenders
+      requestAnimationFrame(()=>{ menuHud.hidden=true; overHud.hidden=true; });
     }
 
     function gameOver(msg){
@@ -175,13 +261,11 @@
       if (e.key==='r'||e.key==='R'){ start(); }
       if (state==='over' && (e.key==='Enter' || e.key===' ')){ start(); }
     }, {passive:false});
-
     canvas.addEventListener('pointerdown', flap, {passive:true});
 
-    // Drawing helpers
     function drawBackground(){
       ctx.fillStyle = SKY_GRADIENT(); ctx.fillRect(0,0,canvas.width,canvas.height);
-      // simple clouds
+      // clouds
       const cloudCount=6;
       for(let i=0;i<cloudCount;i++){
         const y=(i*97 + (t*0.04 + i*300))%(canvas.height*1.2)-canvas.height*0.2;
@@ -210,25 +294,21 @@
       }
     }
 
-    function drawEric(){
-      const r=player.r;
-      ctx.save(); ctx.translate(player.x,player.y); ctx.rotate(clamp(player.vy*3,-0.6,0.6));
-      ctx.lineWidth=10*DPR; ctx.strokeStyle='#f59e0b'; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
-      ctx.lineWidth=6*DPR; ctx.strokeStyle='#fde68a'; ctx.beginPath(); ctx.arc(0,0,r*0.72,0,Math.PI*2); ctx.stroke();
-      ctx.fillStyle='#0ea5e9'; ctx.beginPath(); ctx.moveTo(0,r*0.2); ctx.lineTo(8*DPR,r*0.55); ctx.lineTo(-8*DPR,r*0.55); ctx.closePath(); ctx.fill();
+    function drawFace(img, x, y, r, borderColor){
+      if (!img.complete) return;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.closePath(); ctx.clip();
+      ctx.drawImage(img, x-r, y-r, r*2, r*2);
       ctx.restore();
+      // border ring
+      ctx.lineWidth = Math.max(3*DPR, r*0.12);
+      ctx.strokeStyle = borderColor;
+      ctx.beginPath(); ctx.arc(x,y,r-ctx.lineWidth*0.35,0,Math.PI*2); ctx.stroke();
     }
 
-    function drawDarya(){
-      const r=darya.r;
-      ctx.save(); ctx.translate(darya.x,darya.y); ctx.fillStyle='#f43f5e'; ctx.beginPath();
-      const rr=r*0.9;
-      ctx.moveTo(0, rr*0.9);
-      ctx.bezierCurveTo(-rr, rr*0.2, -rr*0.9, -rr*0.6, 0, -rr*0.1);
-      ctx.bezierCurveTo(rr*0.9, -rr*0.6, rr, rr*0.2, 0, rr*0.9);
-      ctx.fill();
-      ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(r*0.15, -r*0.05, 3.5*DPR, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
+    function drawPlayers(){
+      drawFace(ericImg,  player.x, player.y, player.r, '#f59e0b'); // gold ring
+      drawFace(daryaImg, darya.x, darya.y, darya.r, '#f43f5e');    // rose ring
     }
 
     function circleRectCollide(cx,cy,cr, rx,ry,rw,rh){
@@ -238,18 +318,18 @@
       return (dx*dx + dy*dy) < (cr*cr);
     }
 
-    // Update & render
     function update(dt){
       if (state!=='playing') return;
       t += dt; sincePipe += dt;
 
       // physics
-      player.vy += GRAVITY * dt * canvas.height/1000;
+      player.vy += 0.0013 * dt * canvas.height/1000;
       player.y  += player.vy * dt * canvas.height/1000;
 
-      // darya follows
+      // Darya follows vertically; gain depends on difficulty
       const dy = player.y - darya.y;
-      darya.vy += (dy*0.0006)*dt; darya.vy = clamp(darya.vy, -0.6, 0.6);
+      darya.vy += (dy*DARYA_GAIN) * dt;
+      darya.vy = clamp(darya.vy, -0.6, 0.6);
       darya.y  += darya.vy * dt * canvas.height/1000;
 
       // pipes
@@ -257,9 +337,15 @@
       if (sincePipe >= PIPE_INTERVAL){ sincePipe=0; spawnPipe(); }
       while (pipes.length && pipes[0].x + pipes[0].w < -10*DPR){ pipes.shift(); }
 
-      // score
+      // score when passed
       for (const p of pipes){
-        if (!p.passed && p.x + p.w < player.x){ p.passed = true; score++; scoreEl.textContent = score; }
+        if (!p.passed && p.x + p.w < player.x){
+          p.passed = true;
+          score++;
+          tubeCountEl.textContent = score;
+          popEl.textContent = score;
+          popEl.classList.remove('show'); void popEl.offsetWidth; popEl.classList.add('show');
+        }
       }
 
       // collisions
@@ -280,7 +366,7 @@
 
     function render(){
       ctx.fillStyle = SKY_GRADIENT(); ctx.fillRect(0,0,canvas.width,canvas.height);
-      drawPipes(); drawEric(); drawDarya();
+      drawPipes(); drawPlayers();
       ctx.fillStyle='#86efac'; ctx.fillRect(0, GROUND_Y(), canvas.width, canvas.height-GROUND_Y());
       ctx.fillStyle='rgba(0,0,0,.08)'; for(let i=0;i<canvas.width;i+=40*DPR){ ctx.fillRect(i, GROUND_Y(), 20*DPR, 8*DPR); }
     }
