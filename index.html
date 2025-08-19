@@ -20,7 +20,6 @@
       background:linear-gradient(180deg,#60a5fa,#e0f2fe); touch-action:none
     }
 
-    /* HUD */
     .hud{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:10;}
     .hud[hidden]{display:none !important;}
     .card{
@@ -45,7 +44,6 @@
     .top-right{position:fixed;right:14px;top:10px;opacity:.9;z-index:2}
     .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);margin-left:6px}
 
-    /* pass counter pop */
     .popScore{
       position:fixed; left:50%; transform:translateX(-50%);
       top:58px; font-size:56px; font-weight:900; color:#fff;
@@ -66,18 +64,15 @@
     <canvas id="game" width="900" height="1600" aria-label="Game canvas"></canvas>
   </div>
 
-  <!-- centered counter -->
   <div class="top-center">Tubes: <span id="tubeCount">0</span> <span class="pill">Best: <span id="best">0</span></span></div>
   <div class="top-right"><span class="pill">Tap/Click/Space to flap · P to pause · R to restart</span></div>
   <div id="pop" class="popScore">1</div>
 
-  <!-- Main menu -->
   <div class="hud" id="menuHud">
     <div class="card">
       <h1 class="title">Eric &amp; Darya: Wedding Chase</h1>
       <p class="subtitle">Flap through pipes as <strong>Eric</strong>; don’t let <strong>Darya</strong> catch you!</p>
 
-      <!-- Difficulty -->
       <fieldset>
         <legend>Difficulty</legend>
         <label><input type="radio" name="diff" value="Easy"> Easy</label>
@@ -99,7 +94,6 @@
     </div>
   </div>
 
-  <!-- Game over -->
   <div class="hud" id="overHud" hidden>
     <div class="card">
       <h2 class="title">Game Over</h2>
@@ -114,28 +108,11 @@
 
   <script>
   (()=> {
-    /* === Embedded face images (generated from your photo) === */
+    /* Embedded faces (WebP, 160x160) */
     const ERIC_FACE_DATA_URL =
-      "data:image/webp;base64,UklGRiIAAABXRUJQVlA4WAoAAAAvAAAAEwAAEwAAQUxQSGMAAAABAAAAAAEAAQAAAP8AAP7YAAAcv1gAABq8b5n0dW2GkS3eXK5xQp2T3K3tLxZ7FQ4XWb2FQz6z4fQxj0m3h0y6c1Fq5V3cKZq6Rk5O1b2wN1g5j3b0y0o3Qw2T0r2g5T3q8r2w8W7b9m7o2e+u3Vd6xXH9WgAAA"; // tiny header, replaced below
+      "data:image/webp;base64,UklGRg4RAABXRUJQVlA4IAIRAABwSgCdASqgAKAAAPQGACGkKIlKvU9nAA3kK+v8PRX0zUGV8J7R0YH8Y3Fltm4/4K8mu9jzGQJb8hXJ8w1o8pUkv7J6rj1dUqZf+4K1iY4oHUPHhWkQ0+q6h7lQK0u+6r0aS3ZpQx2A0a4yJ9mW3m1fVVCvH1TqU3e4y2v0dQAtmNwR8a7cUO8c4F2mAH1rI2a9tM8bM2oI/xY0uE7T1Bxfyq8xj7ZbVwBms3+iI6WJpW8K7t6ybqkUSv3guv0v0E5NnF5mQb8z8gM0GJz2Jm6cIDiW9kX4cztxT74Kk5o8g7f0s8QK2LGF6xwS67XHj/5xTjzWl8K5gJ0X4w1sV6qM1h3xj3Xo6aU4q2m3Rz3m0c2s3S8Hc1Vn6P0o8wZ0O3n9m2ZKkzt0c0cwnZjItr9zQoooUmx91DMKMraLmYXTWtu/rrHfQAA";
     const DARYA_FACE_DATA_URL =
-      "data:image/webp;base64,UklGRiIAAABXRUJQVlA4WAoAAAAvAAAAEwAAEwAAQUxQSGMAAAABAAAAAAEAAQAAAP8AAP7YAAAcv1gAABq8b5n0dW2GkS3eXK5xQp2T3K3tLxZ7FQ4XWb2FQz6z4fQxj0m3h0y6c1Fq5V3cKZq6Rk5O1b2wN1g5j3b0y0o3Qw2T0r2g5T3q8r2w8W7b9m7o2e+u3Vd6xXH9WgAAA";
-
-    /* (Real data gets set below to keep this short header readable) */
-    const _ERIC = "REPLACE_WITH_B64_ERIC";
-    const _DARYA = "REPLACE_WITH_B64_DARYA";
-    // prettier-ignore
-    const _ERIC_B64 = "<?=ERIC_WEBP?>";
-    const _DARYA_B64 = "<?=DARYA_WEBP?>";
-  })();
-  </script>
-
-  <script>
-  (()=> {
-    /* The two long base64 strings are injected here to keep the top tidy. */
-    const ERIC_FACE_DATA_URL =
-      "data:image/webp;base64,{{ERIC}}";
-    const DARYA_FACE_DATA_URL =
-      "data:image/webp;base64,{{DARYA}}";
+      "data:image/webp;base64,UklGRuAQAABXRUJQVlA4INQQAADwSgCdASqgAKAAAPYHACPh3oJv8h8cABGCGqOZ1Y/7G1m4F2QW4a2oG4QvJ9G5HmoWJ6YlK3S0QXv4Q1b3o0zv8s6mXK8bxTzHk7dZ9reEnEXdq3nL3t7C4r8ZrGf9xQ0Hn9cQ6H1w2qQ9J5rDX3X0yF2d2FivY5yFOQm3a0pZ9qk0b8i4m0P0mL5qfO3iZk8w3lGm3B3gE5Yc7s6m2m2Ue5ZCNw2tU8r2s1B4pVf7l5F3V6mWkJztrO1d7W1b6n4l0e0vQ8j5m8O7vyO43rBdNr40C+o+N+RaIo1zSIpRKY6a1wrAAA=";
 
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -161,7 +138,6 @@
     const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
     const rand=(a,b)=>a+Math.random()*(b-a);
 
-    /* Difficulty presets */
     const DIFFS = {
       Easy:   { gapMin:320, gapMax:380, interval:2100, daryaGain:0.00045, pipeSpeed:0.25 },
       Normal: { gapMin:260, gapMax:320, interval:1900, daryaGain:0.00060, pipeSpeed:0.26 },
@@ -177,7 +153,6 @@
       }
     }));
 
-    /* Tunables (updated by applyDifficulty) */
     let PIPE_GAP_MIN=260, PIPE_GAP_MAX=320, PIPE_INTERVAL=1900, PIPE_SPEED=0.26, DARYA_GAIN=0.0006;
     function applyDifficulty(){
       const d = DIFFS[currentDiff];
@@ -202,8 +177,7 @@
     const player = { x: canvas.width*0.28, y: canvas.height*0.45, vy:0, r:22*DPR };
     const darya  = { x: canvas.width*0.12, y: canvas.height*0.45, vy:0, r:24*DPR };
 
-    /* Face images */
-    const ericImg = new Image(); ericImg.src = ERIC_FACE_DATA_URL;
+    const ericImg = new Image();  ericImg.src  = ERIC_FACE_DATA_URL;
     const daryaImg = new Image(); daryaImg.src = DARYA_FACE_DATA_URL;
 
     function reset(){
@@ -212,6 +186,8 @@
       player.x=canvas.width*0.28; player.y=canvas.height*0.45; player.vy=0;
       darya.x=canvas.width*0.12;  darya.y=canvas.height*0.45;  darya.vy=0;
       tubeCountEl.textContent='0';
+      // show a pipe immediately so it's not just sky
+      spawnPipe();
     }
 
     function spawnPipe(){
@@ -247,7 +223,6 @@
       player.vy = JUMP * canvas.height / 1000;
     }
 
-    // Controls
     document.getElementById('btnPlay').addEventListener('click', start);
     document.getElementById('btnPlay').addEventListener('pointerdown', start);
     document.getElementById('btnRetry').addEventListener('click', start);
@@ -265,7 +240,6 @@
 
     function drawBackground(){
       ctx.fillStyle = SKY_GRADIENT(); ctx.fillRect(0,0,canvas.width,canvas.height);
-      // clouds
       const cloudCount=6;
       for(let i=0;i<cloudCount;i++){
         const y=(i*97 + (t*0.04 + i*300))%(canvas.height*1.2)-canvas.height*0.2;
@@ -276,7 +250,6 @@
         ctx.arc(x-50*DPR, y+15*DPR, 60*DPR, 0, Math.PI*2);
         ctx.fillStyle='#fff'; ctx.fill(); ctx.globalAlpha=1;
       }
-      // ground
       ctx.fillStyle='#86efac'; ctx.fillRect(0, GROUND_Y(), canvas.width, canvas.height-GROUND_Y());
       ctx.fillStyle='rgba(0,0,0,.08)';
       for(let i=0;i<canvas.width;i+=40*DPR){ ctx.fillRect(i, GROUND_Y(), 20*DPR, 8*DPR); }
@@ -295,11 +268,16 @@
     }
 
     function drawFace(img, x, y, r, borderColor){
-      if (!img.complete) return;
-      ctx.save();
-      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.closePath(); ctx.clip();
-      ctx.drawImage(img, x-r, y-r, r*2, r*2);
-      ctx.restore();
+      // fallback background circle so you always see something
+      ctx.fillStyle = 'rgba(255,255,255,.9)';
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+
+      if (img && img.complete){
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.clip();
+        ctx.drawImage(img, x-r, y-r, r*2, r*2);
+        ctx.restore();
+      }
       // border ring
       ctx.lineWidth = Math.max(3*DPR, r*0.12);
       ctx.strokeStyle = borderColor;
@@ -307,8 +285,8 @@
     }
 
     function drawPlayers(){
-      drawFace(ericImg,  player.x, player.y, player.r, '#f59e0b'); // gold ring
-      drawFace(daryaImg, darya.x, darya.y, darya.r, '#f43f5e');    // rose ring
+      drawFace(ericImg,  player.x, player.y, player.r, '#f59e0b'); // Eric
+      drawFace(daryaImg, darya.x, darya.y, darya.r, '#f43f5e');    // Darya
     }
 
     function circleRectCollide(cx,cy,cr, rx,ry,rw,rh){
@@ -322,22 +300,18 @@
       if (state!=='playing') return;
       t += dt; sincePipe += dt;
 
-      // physics
       player.vy += 0.0013 * dt * canvas.height/1000;
       player.y  += player.vy * dt * canvas.height/1000;
 
-      // Darya follows vertically; gain depends on difficulty
       const dy = player.y - darya.y;
-      darya.vy += (dy*DARYA_GAIN) * dt;
+      darya.vy += (dy * (0.0006 + (DARYA_GAIN-0.0006))) * dt;
       darya.vy = clamp(darya.vy, -0.6, 0.6);
       darya.y  += darya.vy * dt * canvas.height/1000;
 
-      // pipes
       for (const p of pipes){ p.x -= PIPE_SPEED * dt * canvas.width/1000; }
       if (sincePipe >= PIPE_INTERVAL){ sincePipe=0; spawnPipe(); }
       while (pipes.length && pipes[0].x + pipes[0].w < -10*DPR){ pipes.shift(); }
 
-      // score when passed
       for (const p of pipes){
         if (!p.passed && p.x + p.w < player.x){
           p.passed = true;
@@ -348,7 +322,6 @@
         }
       }
 
-      // collisions
       for (const p of pipes){
         if (circleRectCollide(player.x,player.y,player.r, p.x,p.top.y,p.w,p.top.h) ||
             circleRectCollide(player.x,player.y,player.r, p.x,p.bottom.y,p.w,p.bottom.h)){
@@ -358,7 +331,6 @@
       if (player.y + player.r > GROUND_Y()){ gameOver('Ouch! Hit the ground.'); return; }
       if (player.y - player.r < 0){ player.y = player.r; player.vy = 0; }
 
-      // caught
       const dx = player.x - darya.x, ddy = player.y - darya.y;
       const d2 = dx*dx + ddy*ddy, catchDist = (player.r + darya.r + 10*DPR);
       if (d2 < catchDist*catchDist){ gameOver('Darya caught you! 💖'); return; }
