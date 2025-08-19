@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Eric & Darya: Wedding Chase</title>
+  <style>
+    :root{
+      --bg1:#0f172a; /* slate-900 */
+      --bg2:#1e293b; /* slate-800 */
+      --text:#e5e7eb; /* gray-200 */
+      --shadow:rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);}
+    .wrap{display:flex;align-items:center;justify-content:center;height:100%;padding:16px}
+    canvas{width:min(100%,900px);aspect-ratio:9/16;border-radius:20px;box-shadow:0 20px 60px var(--shadow);
+      background:linear-gradient(180deg,#60a5fa,#e0f2fe);touch-action:none}
+    .hud{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .card{pointer-events:auto;background:rgba(17,24,39,.85);backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,.08);padding:20px 22px;border-radius:16px;width:min(92vw,520px);
+      box-shadow:0 10px 40px var(--shadow)}
+    .title{font-size:24px;font-weight:800;margin:0 0 6px;text-align:center}
+    .subtitle{font-size:14px;opacity:.8;text-align:center;margin:0 0 14px}
+    .btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    button{background:white;color:#111;font-weight:700;padding:12px 18px;border-radius:999px;border:0;cursor:pointer;
+      box-shadow:0 8px 24px var(--shadow)}
+    button.secondary{background:transparent;color:white;border:1px solid rgba(255,255,255,.2)}
+    .small{font-size:12px;opacity:.9;text-align:center;margin-top:8px}
+    .top-left{position:fixed;left:14px;top:10px;font-weight:700;text-shadow:0 2px 0 var(--shadow)}
+    .top-right{position:fixed;right:14px;top:10px;opacity:.9}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);margin-left:6px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="game" width="900" height="1600" aria-label="Game canvas"></canvas>
+  </div>
+
+  <div class="top-left">Score: <span id="score">0</span>
+    <span class="pill">Best: <span id="best">0</span></span></div>
+  <div class="top-right"><span class="pill">Tap/Click/Space to flap · P to pause · R to restart</span></div>
+
+  <div class="hud" id="menuHud">
+    <div class="card">
+      <h1 class="title">Eric &amp; Darya: Wedding Chase</h1>
+      <p class="subtitle">Flap through pipes as <strong>Eric</strong>; don’t let <strong>Darya</strong> catch you!</p>
+      <div class="btnrow">
+        <button id="btnPlay">Start</button>
+        <button class="secondary" id="btnHow">How to play</button>
+      </div>
+      <p class="small" id="howText" hidden>
+        Fly between pipe gaps to score. If you hit a pipe, the ground, or if Darya catches you, it’s game over.
+      </p>
+    </div>
+  </div>
+
+  <div class="hud" id="overHud" hidden>
+    <div class="card">
+      <h2 class="title">Game Over</h2>
+      <p class="subtitle" id="overMsg">So close! Wanna try again?</p>
+      <div class="btnrow">
+        <button id="btnRetry">Play again</button>
+        <button class="secondary" id="btnMenu">Main menu</button>
+      </div>
+      <p class="small">Tip: quick restart with the <strong>R</strong> key.</p>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl  = document.getElementById('best');
+    const menuHud = document.getElementById('menuHud');
+    const overHud = document.getElementById('overHud');
+    const overMsg = document.getElementById('overMsg');
+
+    const DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    function resize(){
+      const w = Math.min(window.innerWidth - 32, 900);
+      const h = Math.round(w * 16/9);
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      canvas.width  = Math.floor(w * DPR);
+      canvas.height = Math.floor(h * DPR);
+    }
+    addEventListener('resize', resize, {passive:true});
+    resize();
+
+    // Helpers
+    const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+    const rand  = (a,b)=>a + Math.random()*(b-a);
+
+    // Constants (scaled to canvas)
+    const GRAVITY       = 0.0013;
+    const JUMP          = -0.45;
+    const PIPE_GAP_MIN  = 180;
+    const PIPE_GAP_MAX  = 240;
+    const PIPE_INTERVAL = 1500;
+    const PIPE_SPEED    = 0.26;
+    const PIPE_WIDTH    = 110;
+    const GROUND_Y      = () => canvas.height - 60 * DPR;
+
+    const SKY_GRADIENT = () => {
+      const g = ctx.createLinearGradient(0,0,0,canvas.height);
+      g.addColorStop(0,'#60a5fa'); g.addColorStop(1,'#e0f2fe'); return g;
+    };
+
+    let state='menu', last=performance.now(), t=0, sincePipe=0;
+    let pipes=[], score=0, best=Number(localStorage.getItem('weddingChase.best')||0);
+    bestEl.textContent = best;
+
+    const player = { x: canvas.width*0.28, y: canvas.height*0.45, vy:0, r:22*DPR };
+    const darya  = { x: canvas.width*0.12, y: canvas.height*0.45, vy:0, r:24*DPR };
+
+    function reset(){
+      pipes = []; score = 0; sincePipe = 0; t = 0; last = performance.now();
+      player.x = canvas.width*0.28; player.y = canvas.height*0.45; player.vy = 0;
+      darya.x  = canvas.width*0.12; darya.y  = canvas.height*0.45; darya.vy = 0;
+      scoreEl.textContent = '0';
+    }
+
+    function spawnPipe(){
+      const gap = rand(PIPE_GAP_MIN, PIPE_GAP_MAX) * DPR;
+      const center = rand(canvas.height*0.25, canvas.height*0.75);
+      const topH = clamp(center - gap/2, 20*DPR, canvas.height-120*DPR);
+      const bottomY = center + gap/2;
+      pipes.push({
+        x: canvas.width + PIPE_WIDTH*DPR, w: PIPE_WIDTH*DPR,
+        top: { y: 0, h: topH },
+        bottom: { y: bottomY, h: GROUND_Y() - bottomY },
+        passed: false
+      });
+    }
+
+    function flap(){
+      if (state === 'menu'){ start(); return; }
+      if (state !== 'playing') return;
+      player.vy = JUMP * canvas.height / 1000;
+    }
+
+    function start(){ reset(); state='playing'; menuHud.hidden=true; overHud.hidden=true; }
+    function gameOver(reason=''){
+      state='over'; overMsg.textContent = reason || 'Oops!'; overHud.hidden=false;
+      if (score > best){ best = score; localStorage.setItem('weddingChase.best', best); }
+      bestEl.textContent = best;
+    }
+
+    // Input
+    document.getElementById('btnPlay').addEventListener('click', start);
+    document.getElementById('btnRetry').addEventListener('click', start);
+    document.getElementById('btnMenu').addEventListener('click', () => { state='menu'; menuHud.hidden=false; overHud.hidden=true; });
+    document.getElementById('btnHow').addEventListener('click', () => {
+      const p = document.getElementById('howText'); p.hidden = !p.hidden;
+    });
+    addEventListener('keydown', e=>{
+      if (e.key===' '||e.key==='ArrowUp'){ e.preventDefault(); flap(); }
+      if (e.key==='p'||e.key==='P'){ if(state==='playing'){ state='paused'; } else if(state==='paused'){ state='playing'; last=performance.now(); } }
+      if (e.key==='r'||e.key==='R'){ start(); }
+    });
+    canvas.addEventListener('pointerdown', flap, {passive:true});
+
+    // Drawing
+    function drawBackground(){
+      ctx.fillStyle = SKY_GRADIENT();
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+
+      // little clouds
+      const cloudCount = 6;
+      for (let i=0;i<cloudCount;i++){
+        const y = (i*97 + (t*0.04 + i*300)) % (canvas.height*1.2) - canvas.height*0.2;
+        const x = (canvas.width - ((t*0.03 + i*700) % (canvas.width+400)));
+        ctx.globalAlpha = 0.15;
+        ctx.beginPath();
+        ctx.arc(x, y, 70*DPR, 0, Math.PI*2);
+        ctx.arc(x+50*DPR, y+10*DPR, 50*DPR, 0, Math.PI*2);
+        ctx.arc(x-50*DPR, y+15*DPR, 60*DPR, 0, Math.PI*2);
+        ctx.fillStyle='#fff'; ctx.fill(); ctx.globalAlpha = 1;
+      }
+
+      // ground
+      ctx.fillStyle='#86efac';
+      ctx.fillRect(0, GROUND_Y(), canvas.width, canvas.height - GROUND_Y());
+      ctx.fillStyle='rgba(0,0,0,.08)';
+      for (let i=0;i<canvas.width;i+=40*DPR){ ctx.fillRect(i, GROUND_Y(), 20*DPR, 8*DPR); }
+    }
+
+    function drawPipes(){
+      for (const p of pipes){
+        const {x,w,top,bottom} = p;
+        ctx.fillStyle='#16a34a';
+        ctx.fillRect(x, top.y, w, top.h);
+        ctx.fillRect(x, bottom.y, w, bottom.h);
+        ctx.fillStyle='#22c55e';
+        ctx.fillRect(x-6*DPR, top.h-12*DPR, w+12*DPR, 12*DPR);
+        ctx.fillRect(x-6*DPR, bottom.y, w+12*DPR, 12*DPR);
+      }
+    }
+
+    function drawEric(){
+      const r = player.r;
+      ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(clamp(player.vy*3,-0.6,0.6));
+      ctx.lineWidth = 10*DPR; ctx.strokeStyle='#f59e0b';
+      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+      ctx.lineWidth = 6*DPR; ctx.strokeStyle='#fde68a';
+      ctx.beginPath(); ctx.arc(0,0,r*0.72,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='#0ea5e9';
+      ctx.beginPath(); ctx.moveTo(0, r*0.2); ctx.lineTo(8*DPR, r*0.55); ctx.lineTo(-8*DPR, r*0.55); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawDarya(){
+      const r = darya.r;
+      ctx.save(); ctx.translate(darya.x, darya.y);
+      ctx.fillStyle='#f43f5e';
+      ctx.beginPath();
+      const rr=r*0.9;
+      ctx.moveTo(0, rr*0.9);
+      ctx.bezierCurveTo(-rr, rr*0.2, -rr*0.9, -rr*0.6, 0, -rr*0.1);
+      ctx.bezierCurveTo(rr*0.9, -rr*0.6, rr, rr*0.2, 0, rr*0.9);
+      ctx.fill();
+      ctx.fillStyle='white'; ctx.beginPath(); ctx
