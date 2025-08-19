@@ -5,31 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
   <title>Eric & Darya: Wedding Chase</title>
   <style>
-    :root{
-      --bg1:#0f172a; /* slate-900 */
-      --bg2:#1e293b; /* slate-800 */
-      --text:#e5e7eb; /* gray-200 */
-      --shadow:rgba(0,0,0,.35);
-    }
+    :root{ --bg1:#0f172a; --bg2:#1e293b; --text:#e5e7eb; --shadow:rgba(0,0,0,.35); }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--text);}
+    html,body{
+      height:100%; margin:0;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);
+    }
     .wrap{display:flex;align-items:center;justify-content:center;height:100%;padding:16px}
-    canvas{width:min(100%,900px);aspect-ratio:9/16;border-radius:20px;box-shadow:0 20px 60px var(--shadow);
-      background:linear-gradient(180deg,#60a5fa,#e0f2fe);touch-action:none}
-    .hud{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-    .card{pointer-events:auto;background:rgba(17,24,39,.85);backdrop-filter:blur(8px);
-      border:1px solid rgba(255,255,255,.08);padding:20px 22px;border-radius:16px;width:min(92vw,520px);
-      box-shadow:0 10px 40px var(--shadow)}
+    canvas{
+      width:min(100%,900px); aspect-ratio:9/16;
+      border-radius:20px; box-shadow:0 20px 60px var(--shadow);
+      background:linear-gradient(180deg,#60a5fa,#e0f2fe); touch-action:none
+    }
+    .hud{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:10;}
+    .hud[hidden]{display:none !important;}
+    .card{
+      background:rgba(17,24,39,.85); backdrop-filter:blur(8px);
+      border:1px solid rgba(255,255,255,.08);
+      padding:20px 22px; border-radius:16px; width:min(92vw,520px);
+      box-shadow:0 10px 40px var(--shadow)
+    }
     .title{font-size:24px;font-weight:800;margin:0 0 6px;text-align:center}
     .subtitle{font-size:14px;opacity:.8;text-align:center;margin:0 0 14px}
     .btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-    button{background:white;color:#111;font-weight:700;padding:12px 18px;border-radius:999px;border:0;cursor:pointer;
-      box-shadow:0 8px 24px var(--shadow)}
-    button.secondary{background:transparent;color:white;border:1px solid rgba(255,255,255,.2)}
+    button{
+      background:#fff;color:#111;font-weight:700;padding:12px 18px;border-radius:999px;border:0;cursor:pointer;
+      box-shadow:0 8px 24px var(--shadow)
+    }
+    button.secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.2)}
     .small{font-size:12px;opacity:.9;text-align:center;margin-top:8px}
-    .top-left{position:fixed;left:14px;top:10px;font-weight:700;text-shadow:0 2px 0 var(--shadow)}
-    .top-right{position:fixed;right:14px;top:10px;opacity:.9}
+    .top-left{position:fixed;left:14px;top:10px;font-weight:700;text-shadow:0 2px 0 var(--shadow);z-index:2}
+    .top-right{position:fixed;right:14px;top:10px;opacity:.9;z-index:2}
     .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);margin-left:6px}
   </style>
 </head>
@@ -42,13 +50,14 @@
     <span class="pill">Best: <span id="best">0</span></span></div>
   <div class="top-right"><span class="pill">Tap/Click/Space to flap · P to pause · R to restart</span></div>
 
+  <!-- Main menu -->
   <div class="hud" id="menuHud">
     <div class="card">
       <h1 class="title">Eric &amp; Darya: Wedding Chase</h1>
       <p class="subtitle">Flap through pipes as <strong>Eric</strong>; don’t let <strong>Darya</strong> catch you!</p>
       <div class="btnrow">
-        <button id="btnPlay">Start</button>
-        <button class="secondary" id="btnHow">How to play</button>
+        <button id="btnPlay" type="button">Start</button>
+        <button class="secondary" id="btnHow" type="button">How to play</button>
       </div>
       <p class="small" id="howText" hidden>
         Fly between pipe gaps to score. If you hit a pipe, the ground, or if Darya catches you, it’s game over.
@@ -56,20 +65,21 @@
     </div>
   </div>
 
+  <!-- Game over -->
   <div class="hud" id="overHud" hidden>
     <div class="card">
       <h2 class="title">Game Over</h2>
       <p class="subtitle" id="overMsg">So close! Wanna try again?</p>
       <div class="btnrow">
-        <button id="btnRetry">Play again</button>
-        <button class="secondary" id="btnMenu">Main menu</button>
+        <button id="btnRetry" type="button">Play again</button>
+        <button class="secondary" id="btnMenu" type="button">Main menu</button>
       </div>
       <p class="small">Tip: quick restart with the <strong>R</strong> key.</p>
     </div>
   </div>
 
   <script>
-  (() => {
+  (()=> {
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
@@ -87,26 +97,21 @@
       canvas.width  = Math.floor(w * DPR);
       canvas.height = Math.floor(h * DPR);
     }
-    addEventListener('resize', resize, {passive:true});
-    resize();
+    addEventListener('resize', resize, {passive:true}); resize();
 
     // Helpers
-    const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-    const rand  = (a,b)=>a + Math.random()*(b-a);
+    const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const rand=(a,b)=>a+Math.random()*(b-a);
 
-    // Constants (scaled to canvas)
-    const GRAVITY       = 0.0013;
-    const JUMP          = -0.45;
-    const PIPE_GAP_MIN  = 180;
-    const PIPE_GAP_MAX  = 240;
-    const PIPE_INTERVAL = 1500;
-    const PIPE_SPEED    = 0.26;
-    const PIPE_WIDTH    = 110;
-    const GROUND_Y      = () => canvas.height - 60 * DPR;
+    // Constants
+    const GRAVITY=0.0013, JUMP=-0.45, PIPE_GAP_MIN=180, PIPE_GAP_MAX=240, PIPE_INTERVAL=1500,
+          PIPE_SPEED=0.26, PIPE_WIDTH=110;
+    const GROUND_Y = () => canvas.height - 60*DPR;
 
     const SKY_GRADIENT = () => {
       const g = ctx.createLinearGradient(0,0,0,canvas.height);
-      g.addColorStop(0,'#60a5fa'); g.addColorStop(1,'#e0f2fe'); return g;
+      g.addColorStop(0,'#60a5fa'); g.addColorStop(1,'#e0f2fe');
+      return g;
     };
 
     let state='menu', last=performance.now(), t=0, sincePipe=0;
@@ -117,80 +122,85 @@
     const darya  = { x: canvas.width*0.12, y: canvas.height*0.45, vy:0, r:24*DPR };
 
     function reset(){
-      pipes = []; score = 0; sincePipe = 0; t = 0; last = performance.now();
-      player.x = canvas.width*0.28; player.y = canvas.height*0.45; player.vy = 0;
-      darya.x  = canvas.width*0.12; darya.y  = canvas.height*0.45; darya.vy = 0;
-      scoreEl.textContent = '0';
+      pipes=[]; score=0; sincePipe=0; t=0; last=performance.now();
+      player.x=canvas.width*0.28; player.y=canvas.height*0.45; player.vy=0;
+      darya.x=canvas.width*0.12;  darya.y=canvas.height*0.45;  darya.vy=0;
+      scoreEl.textContent='0';
     }
 
     function spawnPipe(){
-      const gap = rand(PIPE_GAP_MIN, PIPE_GAP_MAX) * DPR;
+      const gap = rand(PIPE_GAP_MIN, PIPE_GAP_MAX)*DPR;
       const center = rand(canvas.height*0.25, canvas.height*0.75);
-      const topH = clamp(center - gap/2, 20*DPR, canvas.height-120*DPR);
+      const topH = Math.max(20*DPR, Math.min(center - gap/2, canvas.height-120*DPR));
       const bottomY = center + gap/2;
       pipes.push({
         x: canvas.width + PIPE_WIDTH*DPR, w: PIPE_WIDTH*DPR,
-        top: { y: 0, h: topH },
-        bottom: { y: bottomY, h: GROUND_Y() - bottomY },
-        passed: false
+        top:{y:0,h:topH}, bottom:{y:bottomY, h: GROUND_Y()-bottomY},
+        passed:false
       });
     }
 
-    function flap(){
-      if (state === 'menu'){ start(); return; }
-      if (state !== 'playing') return;
-      player.vy = JUMP * canvas.height / 1000;
+    function start(){
+      reset();
+      state='playing';
+      menuHud.hidden=true; overHud.hidden=true;
+      requestAnimationFrame(()=>{ menuHud.hidden=true; overHud.hidden=true; }); // belt & suspenders
     }
 
-    function start(){ reset(); state='playing'; menuHud.hidden=true; overHud.hidden=true; }
-    function gameOver(reason=''){
-      state='over'; overMsg.textContent = reason || 'Oops!'; overHud.hidden=false;
-      if (score > best){ best = score; localStorage.setItem('weddingChase.best', best); }
+    function gameOver(msg){
+      state='over';
+      overMsg.textContent = msg || 'Oops!';
+      overHud.hidden=false;
+      if (score>best){ best=score; localStorage.setItem('weddingChase.best', best); }
       bestEl.textContent = best;
     }
 
-    // Input
+    function flap(){
+      if (state==='menu'){ start(); return; }
+      if (state!=='playing') return;
+      player.vy = JUMP * canvas.height / 1000;
+    }
+
+    // Controls
     document.getElementById('btnPlay').addEventListener('click', start);
+    document.getElementById('btnPlay').addEventListener('pointerdown', start);
     document.getElementById('btnRetry').addEventListener('click', start);
-    document.getElementById('btnMenu').addEventListener('click', () => { state='menu'; menuHud.hidden=false; overHud.hidden=true; });
-    document.getElementById('btnHow').addEventListener('click', () => {
-      const p = document.getElementById('howText'); p.hidden = !p.hidden;
-    });
+    document.getElementById('btnRetry').addEventListener('pointerdown', start);
+    document.getElementById('btnMenu').addEventListener('click', ()=>{ state='menu'; menuHud.hidden=false; overHud.hidden=true; });
+    document.getElementById('btnHow').addEventListener('click', ()=>{ const p=document.getElementById('howText'); p.hidden=!p.hidden; });
+
     addEventListener('keydown', e=>{
       if (e.key===' '||e.key==='ArrowUp'){ e.preventDefault(); flap(); }
       if (e.key==='p'||e.key==='P'){ if(state==='playing'){ state='paused'; } else if(state==='paused'){ state='playing'; last=performance.now(); } }
       if (e.key==='r'||e.key==='R'){ start(); }
-    });
+      if (state==='over' && (e.key==='Enter' || e.key===' ')){ start(); }
+    }, {passive:false});
+
     canvas.addEventListener('pointerdown', flap, {passive:true});
 
-    // Drawing
+    // Drawing helpers
     function drawBackground(){
-      ctx.fillStyle = SKY_GRADIENT();
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-
-      // little clouds
-      const cloudCount = 6;
-      for (let i=0;i<cloudCount;i++){
-        const y = (i*97 + (t*0.04 + i*300)) % (canvas.height*1.2) - canvas.height*0.2;
-        const x = (canvas.width - ((t*0.03 + i*700) % (canvas.width+400)));
-        ctx.globalAlpha = 0.15;
-        ctx.beginPath();
+      ctx.fillStyle = SKY_GRADIENT(); ctx.fillRect(0,0,canvas.width,canvas.height);
+      // simple clouds
+      const cloudCount=6;
+      for(let i=0;i<cloudCount;i++){
+        const y=(i*97 + (t*0.04 + i*300))%(canvas.height*1.2)-canvas.height*0.2;
+        const x=(canvas.width - ((t*0.03 + i*700)%(canvas.width+400)));
+        ctx.globalAlpha=0.15; ctx.beginPath();
         ctx.arc(x, y, 70*DPR, 0, Math.PI*2);
         ctx.arc(x+50*DPR, y+10*DPR, 50*DPR, 0, Math.PI*2);
         ctx.arc(x-50*DPR, y+15*DPR, 60*DPR, 0, Math.PI*2);
-        ctx.fillStyle='#fff'; ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle='#fff'; ctx.fill(); ctx.globalAlpha=1;
       }
-
       // ground
-      ctx.fillStyle='#86efac';
-      ctx.fillRect(0, GROUND_Y(), canvas.width, canvas.height - GROUND_Y());
+      ctx.fillStyle='#86efac'; ctx.fillRect(0, GROUND_Y(), canvas.width, canvas.height-GROUND_Y());
       ctx.fillStyle='rgba(0,0,0,.08)';
-      for (let i=0;i<canvas.width;i+=40*DPR){ ctx.fillRect(i, GROUND_Y(), 20*DPR, 8*DPR); }
+      for(let i=0;i<canvas.width;i+=40*DPR){ ctx.fillRect(i, GROUND_Y(), 20*DPR, 8*DPR); }
     }
 
     function drawPipes(){
-      for (const p of pipes){
-        const {x,w,top,bottom} = p;
+      for(const p of pipes){
+        const {x,w,top,bottom}=p;
         ctx.fillStyle='#16a34a';
         ctx.fillRect(x, top.y, w, top.h);
         ctx.fillRect(x, bottom.y, w, bottom.h);
@@ -201,25 +211,88 @@
     }
 
     function drawEric(){
-      const r = player.r;
-      ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(clamp(player.vy*3,-0.6,0.6));
-      ctx.lineWidth = 10*DPR; ctx.strokeStyle='#f59e0b';
-      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
-      ctx.lineWidth = 6*DPR; ctx.strokeStyle='#fde68a';
-      ctx.beginPath(); ctx.arc(0,0,r*0.72,0,Math.PI*2); ctx.stroke();
-      ctx.fillStyle='#0ea5e9';
-      ctx.beginPath(); ctx.moveTo(0, r*0.2); ctx.lineTo(8*DPR, r*0.55); ctx.lineTo(-8*DPR, r*0.55); ctx.closePath(); ctx.fill();
+      const r=player.r;
+      ctx.save(); ctx.translate(player.x,player.y); ctx.rotate(clamp(player.vy*3,-0.6,0.6));
+      ctx.lineWidth=10*DPR; ctx.strokeStyle='#f59e0b'; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();
+      ctx.lineWidth=6*DPR; ctx.strokeStyle='#fde68a'; ctx.beginPath(); ctx.arc(0,0,r*0.72,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='#0ea5e9'; ctx.beginPath(); ctx.moveTo(0,r*0.2); ctx.lineTo(8*DPR,r*0.55); ctx.lineTo(-8*DPR,r*0.55); ctx.closePath(); ctx.fill();
       ctx.restore();
     }
 
     function drawDarya(){
-      const r = darya.r;
-      ctx.save(); ctx.translate(darya.x, darya.y);
-      ctx.fillStyle='#f43f5e';
-      ctx.beginPath();
+      const r=darya.r;
+      ctx.save(); ctx.translate(darya.x,darya.y); ctx.fillStyle='#f43f5e'; ctx.beginPath();
       const rr=r*0.9;
       ctx.moveTo(0, rr*0.9);
       ctx.bezierCurveTo(-rr, rr*0.2, -rr*0.9, -rr*0.6, 0, -rr*0.1);
       ctx.bezierCurveTo(rr*0.9, -rr*0.6, rr, rr*0.2, 0, rr*0.9);
       ctx.fill();
-      ctx.fillStyle='white'; ctx.beginPath(); ctx
+      ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(r*0.15, -r*0.05, 3.5*DPR, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    function circleRectCollide(cx,cy,cr, rx,ry,rw,rh){
+      const px = Math.max(rx, Math.min(cx, rx+rw));
+      const py = Math.max(ry, Math.min(cy, ry+rh));
+      const dx = cx - px, dy = cy - py;
+      return (dx*dx + dy*dy) < (cr*cr);
+    }
+
+    // Update & render
+    function update(dt){
+      if (state!=='playing') return;
+      t += dt; sincePipe += dt;
+
+      // physics
+      player.vy += GRAVITY * dt * canvas.height/1000;
+      player.y  += player.vy * dt * canvas.height/1000;
+
+      // darya follows
+      const dy = player.y - darya.y;
+      darya.vy += (dy*0.0006)*dt; darya.vy = clamp(darya.vy, -0.6, 0.6);
+      darya.y  += darya.vy * dt * canvas.height/1000;
+
+      // pipes
+      for (const p of pipes){ p.x -= PIPE_SPEED * dt * canvas.width/1000; }
+      if (sincePipe >= PIPE_INTERVAL){ sincePipe=0; spawnPipe(); }
+      while (pipes.length && pipes[0].x + pipes[0].w < -10*DPR){ pipes.shift(); }
+
+      // score
+      for (const p of pipes){
+        if (!p.passed && p.x + p.w < player.x){ p.passed = true; score++; scoreEl.textContent = score; }
+      }
+
+      // collisions
+      for (const p of pipes){
+        if (circleRectCollide(player.x,player.y,player.r, p.x,p.top.y,p.w,p.top.h) ||
+            circleRectCollide(player.x,player.y,player.r, p.x,p.bottom.y,p.w,p.bottom.h)){
+          gameOver('Bonk! Pipe collision.'); return;
+        }
+      }
+      if (player.y + player.r > GROUND_Y()){ gameOver('Ouch! Hit the ground.'); return; }
+      if (player.y - player.r < 0){ player.y = player.r; player.vy = 0; }
+
+      // caught
+      const dx = player.x - darya.x, ddy = player.y - darya.y;
+      const d2 = dx*dx + ddy*ddy, catchDist = (player.r + darya.r + 10*DPR);
+      if (d2 < catchDist*catchDist){ gameOver('Darya caught you! 💖'); return; }
+    }
+
+    function render(){
+      ctx.fillStyle = SKY_GRADIENT(); ctx.fillRect(0,0,canvas.width,canvas.height);
+      drawPipes(); drawEric(); drawDarya();
+      ctx.fillStyle='#86efac'; ctx.fillRect(0, GROUND_Y(), canvas.width, canvas.height-GROUND_Y());
+      ctx.fillStyle='rgba(0,0,0,.08)'; for(let i=0;i<canvas.width;i+=40*DPR){ ctx.fillRect(i, GROUND_Y(), 20*DPR, 8*DPR); }
+    }
+
+    function loop(now){
+      const dt = now - last; last = now;
+      if (state==='playing') update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+  </script>
+</body>
+</html>
